@@ -3,7 +3,6 @@ package analyzer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,17 +17,27 @@ import static analyzer.AnalyzerUtils.searchAndMeasureTime;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException, ExecutionException, IOException {
+        run(args);
+    }
+
+    public static void run(String[] args) throws IOException, ExecutionException, InterruptedException {
         if (args.length != 4) {
             System.out.println("Error, incorrect number of arguments. Expected: 4, found: " + args.length);
             return;
         }
-        BiFunction<byte[], byte[], Boolean> searchAlg = AnalyzerUtils.getSearchAlgByName(args[0]);
+        String searchAlgName = args[0];
+        String pathToFileOrDirectory = args[1];
+        String pattern = args[2];
+        String expectedType = args[3];
+
+        BiFunction<byte[], byte[], Boolean> searchAlg = AnalyzerUtils.getSearchAlgByName(searchAlgName);
         if (searchAlg == null) {
             System.out.println("Unknown search alg. Use: --naive or --KMP");
             return;
         }
+        var namesAndPaths = pathsToNamesAndPaths(getFilePaths(pathToFileOrDirectory));
 
-        outputResults(startSearch(args[1], searchAlg, args[2].getBytes()), args[3]);
+        outputResults(startSearch(namesAndPaths, searchAlg, pattern.getBytes()), expectedType);
     }
 
     public static List<Path> getFilePaths(String pathToFileOrDirectory) throws IOException {
@@ -38,17 +47,14 @@ public class Main {
         }
         return Files.walk(path, 1)
                 .filter(Files::isRegularFile)
-                .collect(Collectors.toCollection(ArrayList::new));
+                .collect(Collectors.toList());
     }
 
-    public static LinkedHashMap<String, Path> getFilenamesAndFilepaths(String pathToFileOrDirectory) throws IOException {
-        var map = new LinkedHashMap<String, Path>();
-        getFilePaths(pathToFileOrDirectory).forEach(v -> map.put(v.getFileName().toString(), v));
-        return map;
+    public static Map<String, Path> pathsToNamesAndPaths(List<Path> paths) {
+        return paths.stream().collect(Collectors.toMap(path -> path.getFileName().toString(), path -> path, (a, b) -> a, LinkedHashMap::new));
     }
 
-    public static LinkedHashMap<String, Future<long[]>> startSearch(String pathToFileOrDirectory, BiFunction<byte[], byte[], Boolean> searchAlg, byte[] pattern) throws IOException {
-        var namesAndPaths = getFilenamesAndFilepaths(pathToFileOrDirectory);
+    public static LinkedHashMap<String, Future<long[]>> startSearch(Map<String, Path> namesAndPaths, BiFunction<byte[], byte[], Boolean> searchAlg, byte[] pattern) {
         var namesAndResults = new LinkedHashMap<String, Future<long[]>>();
 
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
