@@ -58,9 +58,12 @@ public class Main {
     }
 
     public static void outputResults(Map<String, Future<long[]>> results, String pattern) throws ExecutionException, InterruptedException {
+        long time = 0;
         for (Map.Entry<String, Future<long[]>> pair : results.entrySet()) {
             long[] result = pair.getValue().get();
+            time += result[0];
             System.out.format("%s || %s || It took %s seconds\n", pair.getKey(), result[1] == 1 ? pattern : "Unknown file type", result[0] / 1000.0);
         }
+        System.out.println("\nTotal: " + (time / 1000.0) + " seconds");
     }
 }
