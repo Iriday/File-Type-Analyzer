@@ -21,9 +21,16 @@ public class Main {
     }
 
     public static void run(String[] args) throws IOException, ExecutionException, InterruptedException {
-        if (args.length != 4) {
-            System.out.println("Error, incorrect number of arguments. Expected: 4, found: " + args.length);
+        if (args.length != 3 && args.length != 4) {
+            System.out.println("Error, incorrect number of arguments");
             return;
+        }
+        // is search alg is not specified, use the fastest alg.
+        if (args.length == 3) {
+            String[] argsExtended = new String[args.length + 1];
+            System.arraycopy(args, 0, argsExtended, 1, args.length);
+            argsExtended[0] = "--KMP";
+            args = argsExtended;
         }
         String searchAlgName = args[0];
         String pathToFileOrDirectory = args[1];
