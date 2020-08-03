@@ -4,17 +4,17 @@ import java.util.function.BiFunction;
 
 public class AnalyzerUtils {
     public static BiFunction<byte[], byte[], Boolean> getSearchAlgByName(String name) {
-        if(name.equals("--naive")) return AnalyzerUtils::contains;
-        if(name.equals("--KMP")) return AnalyzerUtils::KMPContains;
+        if (name.equals("--naive")) return AnalyzerUtils::contains;
+        if (name.equals("--KMP")) return AnalyzerUtils::KMPContains;
         return null;
     }
 
-    public static long[] searchAndMeasureTime(BiFunction<byte[], byte[], Boolean> searchAlg, byte[] data, byte[] pattern) {
+    public static SearchResult searchAndMeasureTime(BiFunction<byte[], byte[], Boolean> searchAlg, byte[] data, Pattern pattern) {
         long start = System.currentTimeMillis();
-        boolean found = searchAlg.apply(data, pattern);
+        boolean found = searchAlg.apply(data, pattern.pattern);
         long end = System.currentTimeMillis();
 
-        return new long[]{end - start, found ? 1 : 0};
+        return new SearchResult(end - start, found, pattern);
     }
 
     public static boolean contains(byte[] data, byte[] pattern) {
