@@ -14,22 +14,28 @@ import java.util.stream.Collectors;
 import static analyzer.AnalyzerUtils.searchAndMeasureTime;
 
 public class Main {
+    private static final String defaultPatternsPath = "src/main/java/analyzer/patterns/patterns.db";
+    private static final String defaultSearchAlg = "--KMP";
+
     public static void main(String[] args) throws InterruptedException, ExecutionException, IOException {
         run(args);
     }
 
     public static void run(String[] args) throws IOException, ExecutionException, InterruptedException {
-        if (args.length != 2 && args.length != 3) {
+        if (!(args.length >= 1 && args.length <= 3)) {
             System.out.println("Error, incorrect number of arguments");
             return;
         }
-        // is search alg is not specified, use the fastest alg.
-        if (args.length == 2) {
-            String[] argsExtended = new String[args.length + 1];
-            System.arraycopy(args, 0, argsExtended, 1, args.length);
-            argsExtended[0] = "--KMP";
-            args = argsExtended;
+        if (args.length == 1) {
+            args = new String[]{defaultSearchAlg, args[0], defaultPatternsPath};
+        } else if (args.length == 2) {
+            if (args[0].startsWith("--")) {
+                args = new String[]{args[0], args[1], defaultPatternsPath};
+            } else {
+                args = new String[]{defaultSearchAlg, args[0], args[1]};
+            }
         }
+
         String searchAlgName = args[0];
         String pathToFileOrDirectory = args[1];
         String pathToPatterns = args[2];
