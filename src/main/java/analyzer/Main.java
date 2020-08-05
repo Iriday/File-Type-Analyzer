@@ -11,8 +11,6 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static analyzer.AnalyzerUtils.searchAndMeasureTime;
-
 public class Main {
     private static final String defaultPatternsPath = "src/main/java/analyzer/patterns/patterns.db";
     private static final String defaultSearchAlg = "--KMP";
@@ -22,6 +20,7 @@ public class Main {
     }
 
     public static void run(String[] args) throws IOException, ExecutionException, InterruptedException {
+        long start = System.currentTimeMillis();
         if (!(args.length >= 1 && args.length <= 3)) {
             System.out.println("Error, incorrect number of arguments");
             return;
@@ -49,10 +48,10 @@ public class Main {
         var namesAndPaths = pathsToNamesAndPaths(getFilePaths(pathToFileOrDirectory));
         var namesAndData = readFiles(namesAndPaths);
 
-        var results = startSearch(namesAndData, searchAlg, patterns);
+        var results = searchStarter(namesAndData, searchAlg, patterns);
         var resultsReduced = reduceResults(results);
 
-        outputResults(resultsReduced);
+        outputResults(resultsReduced, System.currentTimeMillis() - start);
     }
 
     private static LinkedHashMap<String, SearchResult> reduceResults(Map<String, List<Future<SearchResult>>> results) throws ExecutionException, InterruptedException {
@@ -62,10 +61,9 @@ public class Main {
             for (Future<SearchResult> f : pair.getValue()) {
                 value.add(f.get());
             }
-            long time = value.stream().mapToLong(v -> v.time).sum();
             Pattern pattern = value.stream().filter(v -> v.found).map(sr -> sr.pattern).max(Comparator.comparingInt(p -> p.priority)).orElse(null);
 
-            rs.put(pair.getKey(), new SearchResult(time, pattern != null, pattern));
+            rs.put(pair.getKey(), new SearchResult(pattern != null, pattern));
         }
         return rs;
     }
@@ -92,26 +90,24 @@ public class Main {
         return paths.stream().collect(Collectors.toMap(path -> path.getFileName().toString(), path -> path, (a, b) -> a, LinkedHashMap::new));
     }
 
-    public static LinkedHashMap<String, List<Future<SearchResult>>> startSearch(Map<String, byte[]> namesAndPaths, BiFunction<byte[], byte[], Boolean> searchAlg, List<Pattern> patterns) {
+    public static LinkedHashMap<String, List<Future<SearchResult>>> searchStarter(Map<String, byte[]> namesAndPaths, BiFunction<byte[], byte[], Boolean> searchAlg, List<Pattern> patterns) {
         var namesAndResults = new LinkedHashMap<String, List<Future<SearchResult>>>();
 
         ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         namesAndPaths.forEach((kay, value) -> namesAndResults.put(kay, patterns.stream()
                 .map(pattern ->
                         service.submit(() ->
-                                searchAndMeasureTime(searchAlg, value, pattern)))
+                                AnalyzerUtils.startSearch(searchAlg, value, pattern)))
                 .collect(Collectors.toList())));
         service.shutdown();
         return namesAndResults;
     }
 
-    public static void outputResults(Map<String, SearchResult> results) {
-        long time = 0;
+    public static void outputResults(Map<String, SearchResult> results, long timeElapsed) {
         for (Map.Entry<String, SearchResult> pair : results.entrySet()) {
             SearchResult rs = pair.getValue();
-            time += rs.time;
-            System.out.format("%s || %s || It took %s seconds\n", pair.getKey(), rs.found ? rs.pattern.name : "Unknown file type", rs.time / 1000.0);
+            System.out.format("%s: %s\n", pair.getKey(), rs.found ? rs.pattern.name : "Unknown file type");
         }
-        System.out.println("\nTotal: " + (time / 1000.0) + " seconds");
+        System.out.println("\nIt took: " + (timeElapsed / 1000.0) + " seconds");
     }
 }

@@ -9,12 +9,9 @@ public class AnalyzerUtils {
         return null;
     }
 
-    public static SearchResult searchAndMeasureTime(BiFunction<byte[], byte[], Boolean> searchAlg, byte[] data, Pattern pattern) {
-        long start = System.currentTimeMillis();
+    public static SearchResult startSearch(BiFunction<byte[], byte[], Boolean> searchAlg, byte[] data, Pattern pattern) {
         boolean found = searchAlg.apply(data, pattern.pattern);
-        long end = System.currentTimeMillis();
-
-        return new SearchResult(end - start, found, pattern);
+        return new SearchResult(found, pattern);
     }
 
     public static boolean contains(byte[] data, byte[] pattern) {
