@@ -42,7 +42,7 @@ public class Main {
 
         BiFunction<byte[], byte[], Boolean> searchAlg = AnalyzerUtils.getSearchAlgByName(searchAlgName);
         if (searchAlg == null) {
-            System.out.println("Unknown search alg. Use: --naive or --KMP");
+            System.out.println("Unknown search alg. Use: --naive, --KMP, or --RK");
             return;
         }
         var namesAndPaths = pathsToNamesAndPaths(getFilePaths(pathToFileOrDirectory));

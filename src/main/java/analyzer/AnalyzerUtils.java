@@ -6,6 +6,7 @@ public class AnalyzerUtils {
     public static BiFunction<byte[], byte[], Boolean> getSearchAlgByName(String name) {
         if (name.equals("--naive")) return AnalyzerUtils::contains;
         if (name.equals("--KMP")) return AnalyzerUtils::KMPContains;
+        if (name.equals("--RK")) return AnalyzerUtils::RKContains;
         return null;
     }
 
@@ -64,46 +65,46 @@ public class AnalyzerUtils {
     }
 
     // Rabin Karp alg
-    public static boolean RKContains(String str, String pattern) {
-        if (str.length() < pattern.length()) {
+    public static boolean RKContains(byte[] str, byte[] pattern) {
+        if (str.length < pattern.length) {
             return false;
         }
 
-        int a = 53;
+        int a = 53 * 3;
         long m = 1_000_000_009;
 
         long patternHash = 0;
         long currStrHash = 0;
         long pow = 1;
 
-        for (int i = 0; i < pattern.length(); i++) {
-            patternHash += hash(pattern.charAt(i)) * pow;
+        for (int i = 0; i < pattern.length; i++) {
+            patternHash += hash(pattern[i]) * pow;
             patternHash %= m;
-            currStrHash += hash(str.charAt(str.length() - pattern.length() + i)) * pow;
+            currStrHash += hash(str[str.length - pattern.length + i]) * pow;
             currStrHash %= m;
 
-            if (i != pattern.length() - 1) {
+            if (i != pattern.length - 1) {
                 pow = pow * a % m;
             }
         }
 
-        for (int i = str.length(); i >= pattern.length(); i--) {
+        for (int i = str.length; i >= pattern.length; i--) {
             if (patternHash == currStrHash) {
-                for (int j = 0; j < pattern.length() && pattern.charAt(j) == str.charAt(i - pattern.length() + j); j++) {
-                    if (j == pattern.length() - 1) {
+                for (int j = 0; j < pattern.length && pattern[j] == str[i - pattern.length + j]; j++) {
+                    if (j == pattern.length - 1) {
                         return true;
                     }
                 }
             }
-            if (i > pattern.length()) {
-                currStrHash = (currStrHash - hash(str.charAt(i - 1)) * pow % m + m) * a % m;
-                currStrHash = (currStrHash + hash(str.charAt(i - pattern.length() - 1))) % m;
+            if (i > pattern.length) {
+                currStrHash = (currStrHash - hash(str[i - 1]) * pow % m + m) * a % m;
+                currStrHash = (currStrHash + hash(str[i - pattern.length - 1])) % m;
             }
         }
         return false;
     }
 
-    public static int hash(char c) {
-        return c - 'A' + 1;
+    public static int hash(byte b) {
+        return b + 10;
     }
 }
